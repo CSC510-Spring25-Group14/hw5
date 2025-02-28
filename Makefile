@@ -25,7 +25,7 @@ $(STOPPED) : $(CLEANED)
 
 # Step 3: Report frequency of words
 $(FREQS): $(STOPPED)
-	cat $< | YYY | sort -nr > $@
+	cat $< | tr ' ' '\n' | sort | uniq -c | sort -nr > $@
 
 
 # Step 4: Extract Top 10 most frequent words
