@@ -1,62 +1,59 @@
-# ZZZ.awk - Generate word frequency table per paragraph
-
 BEGIN {
-    pass = 0;
-    
-    # Parse command-line arguments for PASS value
-    for (i = 1; i < ARGC; i++) {
-        if (ARGV[i] ~ /^PASS=[12]$/) {
-            split(ARGV[i], arr, "=");
-            pass = arr[2]; 
-            ARGV[i] = "";  # Remove from argument list to avoid file read issues
+    FS = " "
+    OFS = ","
+    paragraphCount = 0
+    outputFile = "step4.txt"
+}
+
+# First pass: Read the top 10 words
+PASS == 1 {
+    topWords[NR] = $1
+    next
+}
+
+# Second pass: Process the cleaned text file
+PASS == 2 {
+    # Start of a new paragraph
+    if (NF == 0 && length(paragraph) > 0) {
+        processParagraph()
+        delete wordCount
+        paragraph = ""
+        paragraphCount++
+    } else {
+        paragraph = paragraph " " $0
+        for (i = 1; i <= NF; i++) {
+            wordCount[$i]++
         }
     }
 }
 
-# First pass: Read top words into an array
-(pass == 1) {
-    top_words[$1] = 1;
-    next;
-}
-
-# Second pass: Process paragraphs and count word frequencies
-(pass == 2) {
-    delete freq;
-    paragraph = "";
-
-    while (getline > 0) {
-        if ($0 ~ /^[ \t]*$/) {
-            # If a blank line is found, process the paragraph
-            if (length(paragraph) > 0) {
-                process_paragraph(paragraph);
-                paragraph = "";
-            }
-        } else {
-            paragraph = paragraph " " $0;
-        }
-    }
-
+END {
     # Process the last paragraph if it exists
     if (length(paragraph) > 0) {
-        process_paragraph(paragraph);
+        processParagraph()
+    }
+    
+    # Print the header (top 10 words)
+    printf "" > outputFile  # Clear the file
+    for (i = 1; i <= 10; i++) {
+        printf "%s%s", topWords[i], (i < 10 ? OFS : ORS) >> outputFile
+    }
+    
+    # Print the word counts for each paragraph
+    for (p = 1; p <= paragraphCount; p++) {
+        for (i = 1; i <= 10; i++) {
+            printf "%d%s", (results[p, topWords[i]] ? results[p, topWords[i]] : 0), (i < 10 ? OFS : ORS) >> outputFile
+        }
     }
 }
 
-# Function to process a paragraph and count word frequencies
-function process_paragraph(text) {
-    split(text, words, " ");  # Tokenize paragraph into words
-
-    for (i in words) {
-        word = words[i];
-        if (word in top_words) {
-            freq[word]++;
+function processParagraph() {
+    for (word in wordCount) {
+        for (i = 1; i <= 10; i++) {
+            if (word == topWords[i]) {
+                results[paragraphCount + 1, word] = wordCount[word]
+                break
+            }
         }
     }
-
-    # Print the frequency table for the paragraph
-    output = "";
-    for (word in top_words) {
-        output = output (freq[word] ? freq[word] : 0) " ";
-    }
-    print output;
 }
