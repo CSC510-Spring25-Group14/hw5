@@ -2,7 +2,7 @@ BEGIN {
     FS = " "
     OFS = ","
     paragraphCount = 0
-    outputFile = "step4.txt"
+    outputFile = "table.txt"
 }
 
 # First pass: Read the top 10 words
